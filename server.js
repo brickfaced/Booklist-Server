@@ -1,8 +1,9 @@
-'use strict'
+'use strict';
 
 const express = require('express');
 const cors = require('cors');
 const pg = require('pg');
+const bodyParser = require('body-parser').urlencoded({extended: true});
 
 const app = express();
 const PORT = process.env.PORT;
@@ -19,20 +20,25 @@ app.get('/api/v1/books', (req,res) => {
     .then(result => res.send(result.rows));
 });
 
-app.post('/api/v1/books', (req,res) => {
+app.get('/api/v1/books/:id', (req,res) => {
+  client.query(`SELECT * FROM books WHERE book_id=${req.params.id};`)
+    .then(results => res.send(results.rows))
+    .catch(console.error);
+});
+
+app.post('/api/v1/books', bodyParser, (req,res) => {
   client.query(
-    'INSERT INTO books(title, author, isbn, image_url, description) VALUES($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING;',
+    'INSERT INTO books(title, author, isbn, image_url, description) VALUES($1, $2, $3, $4, $5);',
     [
-    request.body.title, 
-    request.body.author,
-    request.body.isbn,
-    request.body.image_url,
-    request.body.description
-    ],
-    function(err) {
-      if(err) console.err(err)
-    }
+      req.body.title,
+      req.body.author,
+      req.body.isbn,
+      req.body.image_url,
+      req.body.description
+    ]
   )
+    .then(res.sendStatus(201))
+    .catch(console.error);
 });
 
 app.listen(PORT, () => console.log(`Listening on port:  ${PORT}`));
